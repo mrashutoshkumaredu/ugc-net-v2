@@ -186,7 +186,7 @@
       </div>
 
       <div class="pt-4 sm:pt-6 border-t border-slate-100 mt-4 sm:mt-6">
-        <button id="submit-btn" onclick="submitTest()" class="w-full py-2.5 sm:py-3 bg-emerald-600 text-white text-xs sm:text-sm font-bold rounded-lg hover:bg-emerald-700 transition shadow-md">
+        <button id="submit-btn" onclick="confirmSubmitModal()" class="w-full py-2.5 sm:py-3 bg-emerald-600 text-white text-xs sm:text-sm font-bold rounded-lg hover:bg-emerald-700 transition shadow-md">
           Submit Test
         </button>
       </div>
@@ -217,6 +217,37 @@
         <button onclick="closeInstructionModal()" class="w-1/2 py-2.5 border border-slate-300 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-50 transition">Cancel</button>
         <button onclick="launchExam()" class="w-1/2 py-2.5 bg-emerald-600 text-white font-bold rounded-xl text-xs hover:bg-emerald-700 transition shadow-md">I Am Ready to Begin</button>
       </div>
+    </div>
+  </div>
+
+  <!-- CONFIRM SUBMISSION MODAL (REPLACES BROWSER ALERT) -->
+  <div id="submit-confirm-modal" class="hidden fixed inset-0 bg-slate-900/70 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center">
+      <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center font-bold text-xl mx-auto mb-3">⚠️</div>
+      <h3 class="text-lg font-bold text-slate-800 mb-1">Submit Your Test?</h3>
+      <p class="text-xs text-slate-500 mb-6">Are you sure you want to finalize and submit your test? You will not be able to change answers after this.</p>
+      
+      <div class="flex gap-3">
+        <button onclick="closeSubmitConfirmModal()" class="w-1/2 py-2.5 border border-slate-300 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-50 transition">Cancel</button>
+        <button onclick="executeSubmission()" class="w-1/2 py-2.5 bg-emerald-600 text-white font-bold rounded-xl text-xs hover:bg-emerald-700 transition shadow-md">Yes, Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT SUMMARY MODAL -->
+  <div id="result-modal" class="hidden fixed inset-0 bg-slate-900/70 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl text-center">
+      <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center font-bold text-2xl mx-auto mb-3">🎉</div>
+      <h3 class="text-xl font-bold text-indigo-900 mb-1">Test Submitted!</h3>
+      <p class="text-xs text-slate-500 mb-4">Your performance has been recorded successfully.</p>
+      
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 text-xs mb-6 text-left">
+        <div class="flex justify-between"><span>Score Obtained:</span> <strong id="res-score" class="text-indigo-900 font-bold">0 / 0</strong></div>
+        <div class="flex justify-between"><span>Percentage:</span> <strong id="res-percentage" class="text-emerald-600 font-bold">0%</strong></div>
+        <div class="flex justify-between"><span>Time Taken:</span> <strong id="res-time" class="text-slate-800">0 mins</strong></div>
+      </div>
+
+      <button onclick="closeResultModal()" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl text-xs hover:bg-indigo-700 transition shadow-md">Review Question Explanations</button>
     </div>
   </div>
 
