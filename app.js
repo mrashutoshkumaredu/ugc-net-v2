@@ -356,20 +356,23 @@ async function executeSubmission(isAuto = false) {
   isSubmitted = true;
   if (timerInterval) clearInterval(timerInterval);
 
-  let score = 0;
+  let correctCount = 0;
   let unitStats = {};
 
   questions.forEach((q, idx) => {
     const isCorrect = userAnswers[idx] === q.correct_option;
-    if (isCorrect) score++;
+    if (isCorrect) correctCount++;
 
     if (!unitStats[q.unit]) unitStats[q.unit] = { total: 0, correct: 0 };
     unitStats[q.unit].total++;
     if (isCorrect) unitStats[q.unit].correct++;
   });
 
+  // UGC NET SCORING: 2 Marks per correct question
+  const marksObtained = correctCount * 2;
+  const totalPossibleMarks = questions.length * 2;
   const totalQs = questions.length > 0 ? questions.length : 1;
-  const percentage = ((score / totalQs) * 100).toFixed(2);
+  const percentage = ((correctCount / totalQs) * 100).toFixed(2);
   const timeTaken = pendingExamConfig ? (pendingExamConfig.duration - timeRemaining) : 0;
 
   try {
@@ -383,7 +386,7 @@ async function executeSubmission(isAuto = false) {
         paper_id: '2026_07_JAN_SHIFT1',
         test_mode: pendingExamConfig ? pendingExamConfig.mode : 'Full Test',
         total_questions: questions.length,
-        correct_answers: score,
+        correct_answers: correctCount,
         score_percentage: parseFloat(percentage),
         time_taken_seconds: timeTaken,
         unit_breakdown: unitStats
@@ -395,12 +398,14 @@ async function executeSubmission(isAuto = false) {
 
   document.getElementById('submit-btn')?.classList.add('hidden');
   document.getElementById('review-btn')?.classList.add('hidden');
+  document.getElementById('clear-btn')?.classList.add('hidden');
 
   const resScore = document.getElementById('res-score');
   const resPerc = document.getElementById('res-percentage');
   const resTime = document.getElementById('res-time');
 
-  if (resScore) resScore.innerText = `${score} / ${questions.length}`;
+  // Display both total marks and correct count (e.g., "80 / 100 Marks (40/50 Qs)")
+  if (resScore) resScore.innerText = `${marksObtained} / ${totalPossibleMarks} Marks (${correctCount}/${questions.length} Qs)`;
   if (resPerc) resPerc.innerText = `${percentage}%`;
   if (resTime) resTime.innerText = `${Math.floor(timeTaken / 60)} mins ${timeTaken % 60} secs`;
 
