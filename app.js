@@ -22,14 +22,14 @@ function cleanNewlines(str) {
   return str.replace(/\\n/g, '\n');
 }
 
-// 1. INITIALISATION (PURE DATA FETCHING - NO DIRECT DOM READS IN TRY BLOCK)
+// 1. INITIALISATION
 async function initQuiz() {
   await checkUserSession();
   try {
     const { data, error } = await db
       .from('questions')
       .select('*')
-      .order('id', { ascending: true }); // Fetch all questions across all papers
+      .order('id', { ascending: true });
 
     if (error) {
       console.error("Supabase Error:", error);
@@ -39,7 +39,7 @@ async function initQuiz() {
     if (data && data.length > 0) {
       allQuestions = data.map(q => ({
         id: q.id,
-        paper_id: q.paper_id, // Preserved paper_id for unique paper counting
+        paper_id: q.paper_id,
         unit: q.unit,
         question_text: cleanNewlines(q.question_text),
         layout_text: cleanNewlines(q.layout_text),
@@ -48,28 +48,23 @@ async function initQuiz() {
         ai_hint: cleanNewlines(q.ai_hint)
       }));
 
-      // --- DYNAMIC COUNTS CODE ADDED HERE ---
       const totalQuestionsCount = allQuestions.length;
-
-      // Count unique paper IDs in the database
       const uniquePapers = new Set(allQuestions.map(q => q.paper_id || '2026_07_JAN_SHIFT1'));
       const totalPapersCount = uniquePapers.size;
 
-      // Update the landing page badges dynamically
       const qStatElem = document.getElementById('stat-question-count');
       const pStatElem = document.getElementById('stat-paper-count');
 
       if (qStatElem) qStatElem.innerText = totalQuestionsCount;
       if (pStatElem) pStatElem.innerText = totalPapersCount;
-      // -------------------------------------
     }
   } catch (err) {
     console.error("Data fetch exception:", err);
   } finally {
-    // Safely update theme limits after DOM is guaranteed to be ready
     setTimeout(updateThemeQuestionLimit, 200);
   }
 }
+
 // 2. DASHBOARD & THEME SELECTION HELPERS
 function showLandingPage() {
   if (!isSubmitted && questions.length > 0) {
@@ -106,7 +101,7 @@ function syncQuestionCount(val) {
 // 3. PREPARE & LAUNCH EXAM
 function prepareTest(mode) {
   if (!currentUser) {
-    toggleAuthModal();
+    openAuthModal('LOGIN');
     return;
   }
 
@@ -114,7 +109,7 @@ function prepareTest(mode) {
     pendingExamConfig = {
       mode: 'Full Test',
       questions: [...allQuestions],
-      duration: 3600 // 60 minutes
+      duration: 3600
     };
   } else {
     const themeSelect = document.getElementById('theme-select');
@@ -128,7 +123,7 @@ function prepareTest(mode) {
     pendingExamConfig = {
       mode: selectedTheme,
       questions: filtered.length > 0 ? filtered : [...allQuestions].slice(0, requestedCount),
-      duration: requestedCount * 60 // EXACT 1 min per question in seconds
+      duration: requestedCount * 60
     };
   }
 
@@ -289,7 +284,6 @@ function renderPalette() {
 function startTimer() {
   if (timerInterval) clearInterval(timerInterval);
   
-  // Render exact computed time immediately
   const mins = Math.floor(timeRemaining / 60);
   const secs = timeRemaining % 60;
   const timerDisp = document.getElementById('timer-display');
@@ -345,9 +339,12 @@ async function executeSubmission(isAuto = false) {
 
   try {
     if (currentUser) {
+      const studentName = currentUser.user_metadata?.full_name || 'Student';
+
       await db.from('test_submissions').insert([{
         user_id: currentUser.id,
         user_email: currentUser.email,
+        student_name: studentName,
         paper_id: '2026_07_JAN_SHIFT1',
         test_mode: pendingExamConfig ? pendingExamConfig.mode : 'Full Test',
         total_questions: questions.length,
@@ -388,42 +385,64 @@ async function checkUserSession() {
   
   const userDisp = document.getElementById('user-email-display');
   const userPill = document.getElementById('user-pill');
-  const authBtn = document.getElementById('auth-btn');
+  const authGroup = document.getElementById('auth-buttons-group');
 
   if (user) {
     currentUser = user;
-    if (userDisp) userDisp.innerText = user.email;
+    const displayName = user.user_metadata?.full_name || user.email;
+    if (userDisp) userDisp.innerText = `👋 ${displayName}`;
     if (userPill) userPill.classList.remove('hidden');
-    if (authBtn) authBtn.classList.add('hidden');
+    if (authGroup) authGroup.classList.add('hidden');
   } else {
     currentUser = null;
     if (userPill) userPill.classList.add('hidden');
-    if (authBtn) authBtn.classList.remove('hidden');
+    if (authGroup) authGroup.classList.remove('hidden');
   }
 }
 
-function toggleAuthModal() {
-  document.getElementById('auth-modal')?.classList.toggle('hidden');
+function openAuthModal(mode = 'LOGIN') {
+  isSignUpMode = (mode === 'REGISTER');
+  updateAuthModalUI();
+  document.getElementById('auth-modal')?.classList.remove('hidden');
+}
+
+function closeAuthModal() {
+  document.getElementById('auth-modal')?.classList.add('hidden');
 }
 
 function switchAuthMode() {
   isSignUpMode = !isSignUpMode;
+  updateAuthModalUI();
+}
+
+function updateAuthModalUI() {
   const title = document.getElementById('auth-title');
   const btn = document.getElementById('auth-submit-btn');
   const toggleTxt = document.getElementById('auth-toggle-text');
   const toggleBtn = document.getElementById('auth-toggle-btn');
+  const nameGroup = document.getElementById('name-field-group');
 
   if (title) title.innerText = isSignUpMode ? "Student Registration" : "Student Login";
   if (btn) btn.innerText = isSignUpMode ? "Sign Up" : "Login";
   if (toggleTxt) toggleTxt.innerText = isSignUpMode ? "Already have an account?" : "Don't have an account?";
   if (toggleBtn) toggleBtn.innerText = isSignUpMode ? "Login" : "Sign Up";
+
+  if (nameGroup) {
+    if (isSignUpMode) {
+      nameGroup.classList.remove('hidden');
+    } else {
+      nameGroup.classList.add('hidden');
+    }
+  }
 }
 
 async function handleAuthSubmit() {
+  const nameInput = document.getElementById('auth-name');
   const emailInput = document.getElementById('auth-email');
   const passInput = document.getElementById('auth-password');
 
-  const email = emailInput ? emailInput.value : '';
+  const fullName = nameInput ? nameInput.value.trim() : '';
+  const email = emailInput ? emailInput.value.trim() : '';
   const password = passInput ? passInput.value : '';
 
   if (!email || !password) {
@@ -431,15 +450,26 @@ async function handleAuthSubmit() {
     return;
   }
 
+  if (isSignUpMode && !fullName) {
+    alert("Please enter your Full Name.");
+    return;
+  }
+
   try {
     if (isSignUpMode) {
-      const { error } = await db.auth.signUp({ email, password });
+      const { error } = await db.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: fullName }
+        }
+      });
       if (error) throw error;
     } else {
       const { error } = await db.auth.signInWithPassword({ email, password });
       if (error) throw error;
     }
-    toggleAuthModal();
+    closeAuthModal();
     await checkUserSession();
   } catch (err) {
     alert("Authentication Error: " + err.message);
