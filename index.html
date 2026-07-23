@@ -3,79 +3,146 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UGC NET Paper 1 Practice Platform</title>
+  <title>UGC NET Paper 1 Practice Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-slate-100 font-sans text-slate-800 min-h-screen flex flex-col">
 
-  <!-- TOP HEADER -->
-  <header class="bg-indigo-900 text-white px-4 sm:px-6 py-4 shadow-md">
-    <div class="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-      
-      <!-- Title Area -->
-      <div class="w-full lg:w-auto flex justify-between items-center">
-        <div>
-          <h1 class="text-lg sm:text-xl font-bold tracking-wide">UGC NET Paper 1 Question Bank</h1>
-          <p class="text-xs text-indigo-200">07th Jan 2026 (Shift 1) — Practice Platform</p>
-        </div>
+  <!-- TOP NAVIGATION HEADER -->
+  <header class="bg-indigo-900 text-white px-4 sm:px-6 py-3.5 shadow-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto flex justify-between items-center gap-4">
+      <div onclick="showLandingPage()" class="cursor-pointer">
+        <h1 class="text-base sm:text-lg font-bold tracking-wide">UGC NET Paper 1 Portal</h1>
+        <p class="text-[11px] text-indigo-200 hidden sm:block">National Eligibility Test Practice Platform</p>
       </div>
 
-      <!-- Control Toolbar -->
-      <div class="w-full lg:w-auto flex flex-wrap items-center justify-between sm:justify-end gap-2 sm:gap-3">
-        
-        <!-- User Pill (When Logged In) -->
+      <div class="flex items-center gap-2 sm:gap-3">
         <div id="user-pill" class="hidden text-xs bg-indigo-950 px-3 py-1.5 rounded-lg border border-indigo-700 flex items-center gap-2">
-          <span id="user-email-display" class="font-medium text-indigo-200 truncate max-w-[120px] sm:max-w-none"></span>
+          <span id="user-email-display" class="font-medium text-indigo-200 truncate max-w-[110px] sm:max-w-none"></span>
           <button onclick="handleLogout()" class="text-amber-400 hover:underline font-bold">Logout</button>
         </div>
 
-        <!-- Auth & History Buttons -->
-        <button id="auth-btn" onclick="toggleAuthModal()" class="text-xs bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold px-3 py-2 rounded-lg transition shrink-0">
+        <button id="auth-btn" onclick="toggleAuthModal()" class="text-xs bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold px-3 py-2 rounded-lg transition">
           Login / Register
         </button>
 
-        <button onclick="toggleHistoryModal()" class="text-xs bg-indigo-800 hover:bg-indigo-700 text-white border border-indigo-600 px-3 py-2 rounded-lg transition font-medium shrink-0">
+        <button onclick="toggleHistoryModal()" class="text-xs bg-indigo-800 hover:bg-indigo-700 text-white border border-indigo-600 px-3 py-2 rounded-lg transition font-medium">
           My History
         </button>
-
-        <!-- Unit Filter -->
-        <div class="flex flex-col grow sm:grow-0 min-w-[140px]">
-          <select id="unit-filter" onchange="filterQuestions()" class="w-full bg-indigo-800 text-white text-xs border border-indigo-600 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400 truncate">
-            <option value="ALL">Full Test (All 50 Questions)</option>
-            <option value="Teaching Aptitude">Unit I: Teaching Aptitude</option>
-            <option value="Research Aptitude">Unit II: Research Aptitude</option>
-            <option value="Comprehension">Unit III: Comprehension</option>
-            <option value="Communication">Unit IV: Communication</option>
-            <option value="Mathematical Reasoning and Aptitude">Unit V: Mathematical Reasoning & Aptitude</option>
-            <option value="Logical Reasoning">Unit VI: Logical Reasoning</option>
-            <option value="Data Interpretation">Unit VII: Data Interpretation</option>
-            <option value="Information and Communication Technology (ICT)">Unit VIII: ICT</option>
-            <option value="People, Development and Environment">Unit IX: People, Dev & Environment</option>
-            <option value="Higher Education System">Unit X: Higher Education System</option>
-          </select>
-        </div>
-
-        <!-- Timer Box -->
-        <div id="timer-box" class="bg-indigo-950 px-3 py-1.5 rounded-lg border border-indigo-700 text-center min-w-[75px] shrink-0">
-          <span class="text-[9px] uppercase tracking-wider text-indigo-300 block leading-tight">Time Left</span>
-          <span id="timer-display" class="text-base font-mono font-bold text-amber-400 leading-tight">60:00</span>
-        </div>
-
       </div>
     </div>
   </header>
 
-  <!-- MAIN CONTAINER -->
-  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+  <!-- VIEW 1: LANDING / DASHBOARD SCREEN -->
+  <div id="landing-view" class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+    
+    <!-- Hero Banner -->
+    <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div class="space-y-2 max-w-2xl">
+        <span class="text-xs font-semibold uppercase tracking-widest text-amber-400 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20">Official NTA Pattern</span>
+        <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Let's Master UGC NET Paper 1 PYQs</h2>
+        <p class="text-xs sm:text-sm text-indigo-200 leading-relaxed">Attempt full-length 60-minute mock tests or build custom unit-wise practice sets tailored to your prep strategy.</p>
+      </div>
+      <div class="grid grid-cols-2 gap-3 w-full md:w-auto shrink-0">
+        <div class="bg-white/10 backdrop-blur-md border border-white/10 p-3.5 rounded-xl text-center">
+          <span class="block text-2xl font-black text-amber-400">50</span>
+          <span class="text-[11px] text-indigo-200 uppercase font-medium">Available PYQs</span>
+        </div>
+        <div class="bg-white/10 backdrop-blur-md border border-white/10 p-3.5 rounded-xl text-center">
+          <span class="block text-2xl font-black text-amber-400">10</span>
+          <span class="text-[11px] text-indigo-200 uppercase font-medium">Syllabus Themes</span>
+        </div>
+      </div>
+    </div>
 
+    <!-- Mode Selection Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      <!-- Card 1: Full Paper Mock Test -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+        <div>
+          <div class="w-10 h-10 bg-indigo-100 text-indigo-700 rounded-xl flex items-center justify-center font-bold mb-4">
+            📝
+          </div>
+          <h3 class="text-lg font-bold text-slate-800 mb-1">Full Shift Mock Test</h3>
+          <p class="text-xs text-slate-500 mb-4">Complete 50-question simulation of official shift paper under standard exam timing.</p>
+          
+          <div class="space-y-2 text-xs text-slate-600 mb-6 bg-slate-50 p-3 rounded-lg border border-slate-100">
+            <div class="flex justify-between"><span>Paper:</span> <strong class="text-slate-800">07th Jan 2026 (Shift 1)</strong></div>
+            <div class="flex justify-between"><span>Questions:</span> <strong class="text-slate-800">50 Questions</strong></div>
+            <div class="flex justify-between"><span>Timer:</span> <strong class="text-slate-800">60 Minutes</strong></div>
+          </div>
+        </div>
+
+        <button onclick="prepareTest('FULL')" class="w-full py-3 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 transition shadow-md">
+          Attempt Full Mock Test
+        </button>
+      </div>
+
+      <!-- Card 2: Theme / Unit Wise Practice -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+        <div>
+          <div class="w-10 h-10 bg-amber-100 text-amber-800 rounded-xl flex items-center justify-center font-bold mb-4">
+            🎯
+          </div>
+          <h3 class="text-lg font-bold text-slate-800 mb-1">Unit-Wise Targeted Practice</h3>
+          <p class="text-xs text-slate-500 mb-4">Select a specific theme and configure how many questions you want to solve.</p>
+
+          <div class="space-y-3 mb-6">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Select Theme / Unit:</label>
+              <select id="theme-select" onchange="updateThemeQuestionLimit()" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-amber-500">
+                <option value="Teaching Aptitude">Unit I: Teaching Aptitude</option>
+                <option value="Research Aptitude">Unit II: Research Aptitude</option>
+                <option value="Comprehension">Unit III: Comprehension</option>
+                <option value="Communication">Unit IV: Communication</option>
+                <option value="Mathematical Reasoning and Aptitude">Unit V: Mathematical Reasoning & Aptitude</option>
+                <option value="Logical Reasoning">Unit VI: Logical Reasoning</option>
+                <option value="Data Interpretation">Unit VII: Data Interpretation</option>
+                <option value="Information and Communication Technology (ICT)">Unit VIII: ICT</option>
+                <option value="People, Development and Environment">Unit IX: People, Dev & Environment</option>
+                <option value="Higher Education System">Unit X: Higher Education System</option>
+              </select>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-semibold text-slate-600 mb-1">
+                <span>Number of Questions:</span>
+                <span id="question-count-display" class="text-indigo-600 font-bold">5 Qs</span>
+              </div>
+              <input id="question-slider" type="range" min="1" max="5" value="5" oninput="syncQuestionCount(this.value)" class="w-full accent-indigo-600 cursor-pointer">
+              <span id="calculated-time-text" class="text-[11px] text-slate-400 mt-1 block">Allocated Time: 5 Minutes (1 min/question)</span>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="prepareTest('UNIT')" class="w-full py-3 bg-amber-500 text-slate-900 font-bold text-sm rounded-xl hover:bg-amber-600 transition shadow-md">
+          Start Theme Practice
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- VIEW 2: ACTIVE QUIZ VIEW -->
+  <div id="quiz-view" class="hidden flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+    
     <!-- LEFT: QUESTION DISPLAY AREA -->
     <section class="lg:col-span-3 bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 flex flex-col justify-between">
       <div id="quiz-body">
+        
+        <!-- Question Header Bar -->
         <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4 gap-2">
-          <span id="question-number" class="text-base sm:text-lg font-bold text-indigo-900">Loading Questions...</span>
-          <span id="question-unit" class="text-[11px] sm:text-xs bg-indigo-50 text-indigo-700 font-medium px-2.5 py-1 rounded-full border border-indigo-100 text-right">Unit</span>
+          <span id="question-number" class="text-base sm:text-lg font-bold text-indigo-900">Question 1</span>
+          <div class="flex items-center gap-3">
+            <span id="question-unit" class="text-[11px] sm:text-xs bg-indigo-50 text-indigo-700 font-medium px-2.5 py-1 rounded-full border border-indigo-100">Unit</span>
+            
+            <div id="timer-box" class="bg-indigo-950 px-3 py-1 rounded-lg border border-indigo-700 text-center min-w-[70px]">
+              <span id="timer-display" class="text-sm font-mono font-bold text-amber-400">60:00</span>
+            </div>
+          </div>
         </div>
 
         <div id="layout-container" class="hidden mb-4 bg-slate-50 p-3 sm:p-4 rounded-lg border border-slate-200 max-h-64 overflow-auto">
@@ -125,14 +192,40 @@
       </div>
     </aside>
 
-  </main>
+  </div>
+
+  <!-- PRE-EXAM INSTRUCTION MODAL -->
+  <div id="instruction-modal" class="hidden fixed inset-0 bg-slate-900/70 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      <h3 class="text-xl font-bold text-indigo-900 mb-1">Standard Exam Instructions</h3>
+      <p class="text-xs text-slate-500 mb-4">Please read the instructions carefully before commencing the examination.</p>
+
+      <div class="space-y-3 text-xs text-slate-700 mb-6 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">
+        <p>• <strong>Total Questions:</strong> <span id="inst-count" class="font-bold text-indigo-900">50</span> Questions</p>
+        <p>• <strong>Allocated Duration:</strong> <span id="inst-time" class="font-bold text-indigo-900">60 Minutes</span></p>
+        <p>• <strong>Auto-Submission:</strong> The timer will count down at the top. When it hits zero, your test will automatically submit.</p>
+        <p>• <strong>Palette Legend:</strong></p>
+        <ul class="pl-4 space-y-1">
+          <li class="flex items-center gap-2"><span class="w-3 h-3 bg-slate-200 rounded-full"></span> Gray: Unvisited/Unanswered</li>
+          <li class="flex items-center gap-2"><span class="w-3 h-3 bg-emerald-500 rounded-full"></span> Green: Answered & Saved</li>
+          <li class="flex items-center gap-2"><span class="w-3 h-3 bg-amber-400 rounded-full"></span> Yellow: Marked for Review</li>
+        </ul>
+        <p>• <strong>Scoring:</strong> Each correct answer awards +2 marks. No negative marking is applied.</p>
+      </div>
+
+      <div class="flex gap-3">
+        <button onclick="closeInstructionModal()" class="w-1/2 py-2.5 border border-slate-300 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-50 transition">Cancel</button>
+        <button onclick="launchExam()" class="w-1/2 py-2.5 bg-emerald-600 text-white font-bold rounded-xl text-xs hover:bg-emerald-700 transition shadow-md">I Am Ready to Begin</button>
+      </div>
+    </div>
+  </div>
 
   <!-- AUTHENTICATION MODAL -->
   <div id="auth-modal" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl p-5 sm:p-6 max-w-md w-full shadow-2xl relative">
       <button onclick="toggleAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold">✕</button>
-      <h3 id="auth-title" class="text-lg sm:text-xl font-bold text-indigo-900 mb-1">Student Login</h3>
-      <p class="text-xs text-slate-500 mb-4">Log in to save test scores and track your progress over time.</p>
+      <h3 id="auth-title" class="text-lg sm:text-xl font-bold text-indigo-900 mb-1">Student Login Required</h3>
+      <p class="text-xs text-slate-500 mb-4">Please log in or create an account to start your timed test.</p>
 
       <div class="space-y-3">
         <div>
