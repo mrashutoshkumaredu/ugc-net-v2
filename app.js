@@ -22,6 +22,7 @@ function cleanNewlines(str) {
   return str.replace(/\\n/g, '\n');
 }
 
+// 1. INITIALISATION (PURE DATA FETCHING - NO DIRECT DOM READS IN TRY BLOCK)
 async function initQuiz() {
   await checkUserSession();
   try {
@@ -31,7 +32,10 @@ async function initQuiz() {
       .eq('paper_id', '2026_07_JAN_SHIFT1')
       .order('id', { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase Error:", error);
+      return;
+    }
 
     if (data && data.length > 0) {
       allQuestions = data.map(q => ({
@@ -44,18 +48,15 @@ async function initQuiz() {
         ai_hint: cleanNewlines(q.ai_hint)
       }));
     }
-
-    // Safely setup initial theme limits
-    setTimeout(() => {
-      updateThemeQuestionLimit();
-    }, 100);
-
   } catch (err) {
-    console.error("Supabase load warning:", err.message);
+    console.error("Data fetch exception:", err);
+  } finally {
+    // Safely update theme limits after DOM is guaranteed to be ready
+    setTimeout(updateThemeQuestionLimit, 200);
   }
 }
 
-// DASHBOARD & THEME SELECTION HELPERS
+// 2. DASHBOARD & THEME SELECTION HELPERS
 function showLandingPage() {
   if (!isSubmitted && questions.length > 0) {
     if (!confirm("Leaving now will abandon your active test. Return to dashboard?")) return;
@@ -88,7 +89,7 @@ function syncQuestionCount(val) {
   if (timeDisp) timeDisp.innerText = `Allocated Time: ${val} Minutes (1 min/question)`;
 }
 
-// PREPARE & LAUNCH EXAM
+// 3. PREPARE & LAUNCH EXAM
 function prepareTest(mode) {
   if (!currentUser) {
     toggleAuthModal();
@@ -153,7 +154,7 @@ function launchExam() {
   startTimer();
 }
 
-// QUESTION RENDER LOGIC
+// 4. QUESTION DISPLAY & PALETTE LOGIC
 function loadQuestion(index) {
   if (questions.length === 0) return;
   currentIndex = index;
@@ -270,10 +271,11 @@ function renderPalette() {
   });
 }
 
+// 5. TIMER MANAGEMENT
 function startTimer() {
   if (timerInterval) clearInterval(timerInterval);
   
-  // Render initial timer immediately
+  // Render exact computed time immediately
   const mins = Math.floor(timeRemaining / 60);
   const secs = timeRemaining % 60;
   const timerDisp = document.getElementById('timer-display');
@@ -296,7 +298,7 @@ function startTimer() {
   }, 1000);
 }
 
-// SUBMISSION MODALS & LOGIC
+// 6. SUBMISSION & RESULTS
 function confirmSubmitModal() {
   document.getElementById('submit-confirm-modal')?.classList.remove('hidden');
 }
@@ -365,7 +367,7 @@ function closeResultModal() {
   document.getElementById('result-modal')?.classList.add('hidden');
 }
 
-// AUTH FUNCTIONS
+// 7. AUTHENTICATION & HISTORY
 async function checkUserSession() {
   const { data } = await db.auth.getUser();
   const user = data?.user;
