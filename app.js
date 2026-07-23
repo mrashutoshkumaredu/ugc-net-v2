@@ -68,7 +68,7 @@ async function initQuiz() {
 // 2. DASHBOARD & THEME SELECTION HELPERS
 function showLandingPage() {
   if (!isSubmitted && questions.length > 0) {
-    if (!confirm("Leaving now will abandon your active test. Return to dashboard?")) return;
+    if (!confirm("Are you sure you want to exit? Your active test progress will be lost.")) return;
   }
   if (timerInterval) clearInterval(timerInterval);
   document.getElementById('landing-view')?.classList.remove('hidden');
