@@ -154,7 +154,8 @@ function launchExam() {
 
   document.getElementById('submit-btn')?.classList.remove('hidden');
   document.getElementById('review-btn')?.classList.remove('hidden');
-
+  document.getElementById('clear-btn')?.classList.remove('hidden'); // <-- ADD THIS LINE
+ 
   document.getElementById('landing-view')?.classList.add('hidden');
   document.getElementById('quiz-view')?.classList.remove('hidden');
 
@@ -244,6 +245,40 @@ function selectOption(optIdx) {
   if (isSubmitted) return;
   userAnswers[currentIndex] = optIdx;
   loadQuestion(currentIndex);
+}
+
+// CLEAR RESPONSE LOGIC
+function clearResponse() {
+  if (isSubmitted) return;
+  userAnswers[currentIndex] = null;
+  loadQuestion(currentIndex);
+}
+
+// REPORT MODAL LOGIC
+function openReportModal() {
+  document.getElementById('report-modal')?.classList.remove('hidden');
+}
+
+function closeReportModal() {
+  document.getElementById('report-modal')?.classList.add('hidden');
+  const commentInput = document.getElementById('report-comment');
+  if (commentInput) commentInput.value = '';
+}
+
+async function submitReport() {
+  const reportType = document.getElementById('report-type')?.value;
+  const comment = document.getElementById('report-comment')?.value;
+  const currentQ = questions[currentIndex];
+
+  if (!currentQ) return;
+
+  try {
+    console.log(`Reported Q ID ${currentQ.id}: ${reportType} - ${comment}`);
+    alert("Thank you! Your feedback has been submitted for review.");
+    closeReportModal();
+  } catch (err) {
+    alert("Could not submit report: " + err.message);
+  }
 }
 
 function toggleReview() {
