@@ -7,8 +7,8 @@
 let allQuestions = [];
 let questions = [];
 let currentIndex = 0;
-let userAnswers = {};
-let reviewStatus = {};
+let userAnswers = [];
+let reviewStatus = [];
 let isSubmitted = false;
 let timeRemaining = 3600;
 let timerInterval = null;
@@ -23,7 +23,7 @@ function cleanNewlines(str) {
 }
 
 async function initQuiz() {
-  checkUserSession();
+  await checkUserSession();
   try {
     const { data, error } = await db
       .from('questions')
@@ -33,49 +33,59 @@ async function initQuiz() {
 
     if (error) throw error;
 
-    allQuestions = data.map(q => ({
-      id: q.id,
-      unit: q.unit,
-      question_text: cleanNewlines(q.question_text),
-      layout_text: cleanNewlines(q.layout_text),
-      options: [cleanNewlines(q.option_a), cleanNewlines(q.option_b), cleanNewlines(q.option_c), cleanNewlines(q.option_d)],
-      correct_option: q.correct_option,
-      ai_hint: cleanNewlines(q.ai_hint)
-    }));
+    if (data && data.length > 0) {
+      allQuestions = data.map(q => ({
+        id: q.id,
+        unit: q.unit,
+        question_text: cleanNewlines(q.question_text),
+        layout_text: cleanNewlines(q.layout_text),
+        options: [cleanNewlines(q.option_a), cleanNewlines(q.option_b), cleanNewlines(q.option_c), cleanNewlines(q.option_d)],
+        correct_option: q.correct_option,
+        ai_hint: cleanNewlines(q.ai_hint)
+      }));
+    }
 
-    updateThemeQuestionLimit();
+    // Safely setup initial theme limits
+    setTimeout(() => {
+      updateThemeQuestionLimit();
+    }, 100);
+
   } catch (err) {
-    console.error("Error loading questions from Supabase: " + err.message);
+    console.error("Supabase load warning:", err.message);
   }
 }
 
-// DASHBOARD HELPERS
+// DASHBOARD & THEME SELECTION HELPERS
 function showLandingPage() {
   if (!isSubmitted && questions.length > 0) {
     if (!confirm("Leaving now will abandon your active test. Return to dashboard?")) return;
   }
-  clearInterval(timerInterval);
-  document.getElementById('landing-view').classList.remove('hidden');
-  document.getElementById('quiz-view').classList.add('hidden');
+  if (timerInterval) clearInterval(timerInterval);
+  document.getElementById('landing-view')?.classList.remove('hidden');
+  document.getElementById('quiz-view')?.classList.add('hidden');
 }
 
 function updateThemeQuestionLimit() {
   const themeSelect = document.getElementById('theme-select');
-  if (!themeSelect) return;
+  const slider = document.getElementById('question-slider');
   
+  if (!themeSelect || !slider) return;
+
   const selectedTheme = themeSelect.value;
   const themeQuestions = allQuestions.filter(q => q.unit === selectedTheme);
-  const maxCount = themeQuestions.length > 0 ? themeQuestions.length : 1;
+  const maxCount = themeQuestions.length > 0 ? themeQuestions.length : 5;
 
-  const slider = document.getElementById('question-slider');
   slider.max = maxCount;
   slider.value = maxCount;
   syncQuestionCount(maxCount);
 }
 
 function syncQuestionCount(val) {
-  document.getElementById('question-count-display').innerText = `${val} Qs`;
-  document.getElementById('calculated-time-text').innerText = `Allocated Time: ${val} Minutes (1 min/question)`;
+  const countDisp = document.getElementById('question-count-display');
+  const timeDisp = document.getElementById('calculated-time-text');
+  
+  if (countDisp) countDisp.innerText = `${val} Qs`;
+  if (timeDisp) timeDisp.innerText = `Allocated Time: ${val} Minutes (1 min/question)`;
 }
 
 // PREPARE & LAUNCH EXAM
@@ -92,28 +102,38 @@ function prepareTest(mode) {
       duration: 3600 // 60 minutes
     };
   } else {
-    const selectedTheme = document.getElementById('theme-select').value;
-    const requestedCount = parseInt(document.getElementById('question-slider').value);
+    const themeSelect = document.getElementById('theme-select');
+    const slider = document.getElementById('question-slider');
+    
+    const selectedTheme = themeSelect ? themeSelect.value : 'Teaching Aptitude';
+    const requestedCount = slider ? parseInt(slider.value) : 5;
+    
     const filtered = allQuestions.filter(q => q.unit === selectedTheme).slice(0, requestedCount);
 
     pendingExamConfig = {
       mode: selectedTheme,
-      questions: filtered,
-      duration: requestedCount * 60 // EXACT 1 min per question
+      questions: filtered.length > 0 ? filtered : [...allQuestions].slice(0, requestedCount),
+      duration: requestedCount * 60 // EXACT 1 min per question in seconds
     };
   }
 
-  document.getElementById('inst-count').innerText = pendingExamConfig.questions.length;
-  document.getElementById('inst-time').innerText = `${Math.floor(pendingExamConfig.duration / 60)} Minutes`;
-  document.getElementById('instruction-modal').classList.remove('hidden');
+  const instCount = document.getElementById('inst-count');
+  const instTime = document.getElementById('inst-time');
+  
+  if (instCount) instCount.innerText = pendingExamConfig.questions.length;
+  if (instTime) instTime.innerText = `${Math.floor(pendingExamConfig.duration / 60)} Minutes`;
+  
+  document.getElementById('instruction-modal')?.classList.remove('hidden');
 }
 
 function closeInstructionModal() {
-  document.getElementById('instruction-modal').classList.add('hidden');
+  document.getElementById('instruction-modal')?.classList.add('hidden');
 }
 
 function launchExam() {
   closeInstructionModal();
+  if (!pendingExamConfig) return;
+
   questions = pendingExamConfig.questions;
   timeRemaining = pendingExamConfig.duration;
 
@@ -122,11 +142,11 @@ function launchExam() {
   reviewStatus = new Array(questions.length).fill(false);
   isSubmitted = false;
 
-  document.getElementById('submit-btn').classList.remove('hidden');
-  document.getElementById('review-btn').classList.remove('hidden');
+  document.getElementById('submit-btn')?.classList.remove('hidden');
+  document.getElementById('review-btn')?.classList.remove('hidden');
 
-  document.getElementById('landing-view').classList.add('hidden');
-  document.getElementById('quiz-view').classList.remove('hidden');
+  document.getElementById('landing-view')?.classList.add('hidden');
+  document.getElementById('quiz-view')?.classList.remove('hidden');
 
   renderPalette();
   if (questions.length > 0) loadQuestion(0);
@@ -139,61 +159,74 @@ function loadQuestion(index) {
   currentIndex = index;
   const q = questions[index];
 
-  document.getElementById('question-number').innerText = `Question ${index + 1} of ${questions.length}`;
-  document.getElementById('question-unit').innerText = q.unit || "General";
-  document.getElementById('question-text').innerText = q.question_text;
+  const qNum = document.getElementById('question-number');
+  const qUnit = document.getElementById('question-unit');
+  const qText = document.getElementById('question-text');
+
+  if (qNum) qNum.innerText = `Question ${index + 1} of ${questions.length}`;
+  if (qUnit) qUnit.innerText = q.unit || "General";
+  if (qText) qText.innerText = q.question_text;
 
   const layoutContainer = document.getElementById('layout-container');
   const layoutText = document.getElementById('layout-text');
-  if (q.layout_text && q.layout_text.trim() !== "") {
-    layoutText.innerText = q.layout_text;
-    if (q.layout_text.includes('┌') || q.layout_text.includes('├')) {
-      layoutText.classList.add('ascii-table');
+  if (layoutContainer && layoutText) {
+    if (q.layout_text && q.layout_text.trim() !== "") {
+      layoutText.innerText = q.layout_text;
+      if (q.layout_text.includes('┌') || q.layout_text.includes('├')) {
+        layoutText.classList.add('ascii-table');
+      } else {
+        layoutText.classList.remove('ascii-table');
+      }
+      layoutContainer.classList.remove('hidden');
     } else {
-      layoutText.classList.remove('ascii-table');
+      layoutContainer.classList.add('hidden');
     }
-    layoutContainer.classList.remove('hidden');
-  } else {
-    layoutContainer.classList.add('hidden');
   }
 
   const optionsContainer = document.getElementById('options-container');
-  optionsContainer.innerHTML = '';
+  if (optionsContainer) {
+    optionsContainer.innerHTML = '';
 
-  q.options.forEach((optText, optIdx) => {
-    const isSelected = userAnswers[index] === optIdx;
-    let borderClass = isSelected ? 'border-indigo-600 bg-indigo-50' : 'border-slate-200 hover:border-slate-300';
-    
-    if (isSubmitted) {
-      if (optIdx === q.correct_option) {
-        borderClass = 'border-emerald-600 bg-emerald-50 text-emerald-900 font-semibold';
-      } else if (isSelected && optIdx !== q.correct_option) {
-        borderClass = 'border-rose-600 bg-rose-50 text-rose-900';
+    q.options.forEach((optText, optIdx) => {
+      const isSelected = userAnswers[index] === optIdx;
+      let borderClass = isSelected ? 'border-indigo-600 bg-indigo-50' : 'border-slate-200 hover:border-slate-300';
+      
+      if (isSubmitted) {
+        if (optIdx === q.correct_option) {
+          borderClass = 'border-emerald-600 bg-emerald-50 text-emerald-900 font-semibold';
+        } else if (isSelected && optIdx !== q.correct_option) {
+          borderClass = 'border-rose-600 bg-rose-50 text-rose-900';
+        }
       }
-    }
 
-    const optDiv = document.createElement('div');
-    optDiv.className = `p-4 border-2 rounded-lg cursor-pointer transition flex items-center gap-3 ${borderClass}`;
-    optDiv.onclick = () => selectOption(optIdx);
+      const optDiv = document.createElement('div');
+      optDiv.className = `p-4 border-2 rounded-lg cursor-pointer transition flex items-center gap-3 ${borderClass}`;
+      optDiv.onclick = () => selectOption(optIdx);
 
-    optDiv.innerHTML = `
-      <div class="w-5 h-5 rounded-full border-2 border-slate-400 flex items-center justify-center shrink-0 ${isSelected ? 'border-indigo-600 bg-indigo-600' : ''}">
-        ${isSelected ? '<div class="w-2 h-2 bg-white rounded-full"></div>' : ''}
-      </div>
-      <span class="text-sm sm:text-base">${optText}</span>
-    `;
-    optionsContainer.appendChild(optDiv);
-  });
-
-  const hintContainer = document.getElementById('hint-container');
-  if (isSubmitted) {
-    document.getElementById('hint-text').innerText = q.ai_hint;
-    hintContainer.classList.remove('hidden');
-  } else {
-    hintContainer.classList.add('hidden');
+      optDiv.innerHTML = `
+        <div class="w-5 h-5 rounded-full border-2 border-slate-400 flex items-center justify-center shrink-0 ${isSelected ? 'border-indigo-600 bg-indigo-600' : ''}">
+          ${isSelected ? '<div class="w-2 h-2 bg-white rounded-full"></div>' : ''}
+        </div>
+        <span class="text-sm sm:text-base">${optText}</span>
+      `;
+      optionsContainer.appendChild(optDiv);
+    });
   }
 
-  document.getElementById('prev-btn').disabled = index === 0;
+  const hintContainer = document.getElementById('hint-container');
+  const hintText = document.getElementById('hint-text');
+  if (hintContainer && hintText) {
+    if (isSubmitted) {
+      hintText.innerText = q.ai_hint;
+      hintContainer.classList.remove('hidden');
+    } else {
+      hintContainer.classList.add('hidden');
+    }
+  }
+
+  const prevBtn = document.getElementById('prev-btn');
+  if (prevBtn) prevBtn.disabled = index === 0;
+  
   renderPalette();
 }
 
@@ -216,6 +249,7 @@ function navigate(direction) {
 
 function renderPalette() {
   const grid = document.getElementById('palette-grid');
+  if (!grid) return;
   grid.innerHTML = '';
 
   questions.forEach((_, idx) => {
@@ -238,34 +272,44 @@ function renderPalette() {
 
 function startTimer() {
   if (timerInterval) clearInterval(timerInterval);
+  
+  // Render initial timer immediately
+  const mins = Math.floor(timeRemaining / 60);
+  const secs = timeRemaining % 60;
+  const timerDisp = document.getElementById('timer-display');
+  if (timerDisp) {
+    timerDisp.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+
   timerInterval = setInterval(() => {
     if (timeRemaining <= 0) {
       clearInterval(timerInterval);
-      executeSubmission(true); // Auto submit on timer end
+      executeSubmission(true);
     } else {
       timeRemaining--;
-      const mins = Math.floor(timeRemaining / 60);
-      const secs = timeRemaining % 60;
-      document.getElementById('timer-display').innerText = 
-        `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      const m = Math.floor(timeRemaining / 60);
+      const s = timeRemaining % 60;
+      if (timerDisp) {
+        timerDisp.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+      }
     }
   }, 1000);
 }
 
 // SUBMISSION MODALS & LOGIC
 function confirmSubmitModal() {
-  document.getElementById('submit-confirm-modal').classList.remove('hidden');
+  document.getElementById('submit-confirm-modal')?.classList.remove('hidden');
 }
 
 function closeSubmitConfirmModal() {
-  document.getElementById('submit-confirm-modal').classList.add('hidden');
+  document.getElementById('submit-confirm-modal')?.classList.add('hidden');
 }
 
 async function executeSubmission(isAuto = false) {
   closeSubmitConfirmModal();
 
   isSubmitted = true;
-  clearInterval(timerInterval);
+  if (timerInterval) clearInterval(timerInterval);
 
   let score = 0;
   let unitStats = {};
@@ -279,7 +323,8 @@ async function executeSubmission(isAuto = false) {
     if (isCorrect) unitStats[q.unit].correct++;
   });
 
-  const percentage = ((score / questions.length) * 100).toFixed(2);
+  const totalQs = questions.length > 0 ? questions.length : 1;
+  const percentage = ((score / totalQs) * 100).toFixed(2);
   const timeTaken = pendingExamConfig ? (pendingExamConfig.duration - timeRemaining) : 0;
 
   try {
@@ -300,53 +345,70 @@ async function executeSubmission(isAuto = false) {
     console.error("Error saving submission:", err.message);
   }
 
-  // Hide action buttons
-  document.getElementById('submit-btn').classList.add('hidden');
-  document.getElementById('review-btn').classList.add('hidden');
+  document.getElementById('submit-btn')?.classList.add('hidden');
+  document.getElementById('review-btn')?.classList.add('hidden');
 
-  // Display Result Modal
-  document.getElementById('res-score').innerText = `${score} / ${questions.length}`;
-  document.getElementById('res-percentage').innerText = `${percentage}%`;
-  document.getElementById('res-time').innerText = `${Math.floor(timeTaken / 60)} mins ${timeTaken % 60} secs`;
-  document.getElementById('result-modal').classList.remove('hidden');
+  const resScore = document.getElementById('res-score');
+  const resPerc = document.getElementById('res-percentage');
+  const resTime = document.getElementById('res-time');
+
+  if (resScore) resScore.innerText = `${score} / ${questions.length}`;
+  if (resPerc) resPerc.innerText = `${percentage}%`;
+  if (resTime) resTime.innerText = `${Math.floor(timeTaken / 60)} mins ${timeTaken % 60} secs`;
+
+  document.getElementById('result-modal')?.classList.remove('hidden');
 
   loadQuestion(0);
 }
 
 function closeResultModal() {
-  document.getElementById('result-modal').classList.add('hidden');
+  document.getElementById('result-modal')?.classList.add('hidden');
 }
 
 // AUTH FUNCTIONS
 async function checkUserSession() {
-  const { data: { user } } = await db.auth.getUser();
+  const { data } = await db.auth.getUser();
+  const user = data?.user;
+  
+  const userDisp = document.getElementById('user-email-display');
+  const userPill = document.getElementById('user-pill');
+  const authBtn = document.getElementById('auth-btn');
+
   if (user) {
     currentUser = user;
-    document.getElementById('user-email-display').innerText = user.email;
-    document.getElementById('user-pill').classList.remove('hidden');
-    document.getElementById('auth-btn').classList.add('hidden');
+    if (userDisp) userDisp.innerText = user.email;
+    if (userPill) userPill.classList.remove('hidden');
+    if (authBtn) authBtn.classList.add('hidden');
   } else {
     currentUser = null;
-    document.getElementById('user-pill').classList.add('hidden');
-    document.getElementById('auth-btn').classList.remove('hidden');
+    if (userPill) userPill.classList.add('hidden');
+    if (authBtn) authBtn.classList.remove('hidden');
   }
 }
 
 function toggleAuthModal() {
-  document.getElementById('auth-modal').classList.toggle('hidden');
+  document.getElementById('auth-modal')?.classList.toggle('hidden');
 }
 
 function switchAuthMode() {
   isSignUpMode = !isSignUpMode;
-  document.getElementById('auth-title').innerText = isSignUpMode ? "Student Registration" : "Student Login";
-  document.getElementById('auth-submit-btn').innerText = isSignUpMode ? "Sign Up" : "Login";
-  document.getElementById('auth-toggle-text').innerText = isSignUpMode ? "Already have an account?" : "Don't have an account?";
-  document.getElementById('auth-toggle-btn').innerText = isSignUpMode ? "Login" : "Sign Up";
+  const title = document.getElementById('auth-title');
+  const btn = document.getElementById('auth-submit-btn');
+  const toggleTxt = document.getElementById('auth-toggle-text');
+  const toggleBtn = document.getElementById('auth-toggle-btn');
+
+  if (title) title.innerText = isSignUpMode ? "Student Registration" : "Student Login";
+  if (btn) btn.innerText = isSignUpMode ? "Sign Up" : "Login";
+  if (toggleTxt) toggleTxt.innerText = isSignUpMode ? "Already have an account?" : "Don't have an account?";
+  if (toggleBtn) toggleBtn.innerText = isSignUpMode ? "Login" : "Sign Up";
 }
 
 async function handleAuthSubmit() {
-  const email = document.getElementById('auth-email').value;
-  const password = document.getElementById('auth-password').value;
+  const emailInput = document.getElementById('auth-email');
+  const passInput = document.getElementById('auth-password');
+
+  const email = emailInput ? emailInput.value : '';
+  const password = passInput ? passInput.value : '';
 
   if (!email || !password) {
     alert("Please enter both email and password.");
@@ -355,14 +417,14 @@ async function handleAuthSubmit() {
 
   try {
     if (isSignUpMode) {
-      const { data, error } = await db.auth.signUp({ email, password });
+      const { error } = await db.auth.signUp({ email, password });
       if (error) throw error;
     } else {
-      const { data, error } = await db.auth.signInWithPassword({ email, password });
+      const { error } = await db.auth.signInWithPassword({ email, password });
       if (error) throw error;
     }
     toggleAuthModal();
-    checkUserSession();
+    await checkUserSession();
   } catch (err) {
     alert("Authentication Error: " + err.message);
   }
@@ -370,17 +432,21 @@ async function handleAuthSubmit() {
 
 async function handleLogout() {
   await db.auth.signOut();
-  checkUserSession();
+  await checkUserSession();
   showLandingPage();
 }
 
 async function toggleHistoryModal() {
   const modal = document.getElementById('history-modal');
+  if (!modal) return;
   modal.classList.toggle('hidden');
 
   if (!modal.classList.contains('hidden')) {
+    const container = document.getElementById('history-list');
+    if (!container) return;
+
     if (!currentUser) {
-      document.getElementById('history-list').innerHTML = `<p class="text-sm text-slate-500">Please log in to view your test history.</p>`;
+      container.innerHTML = `<p class="text-sm text-slate-500">Please log in to view your test history.</p>`;
       return;
     }
 
@@ -390,7 +456,6 @@ async function toggleHistoryModal() {
       .eq('user_id', currentUser.id)
       .order('submitted_at', { ascending: false });
 
-    const container = document.getElementById('history-list');
     if (error || !data || data.length === 0) {
       container.innerHTML = `<p class="text-sm text-slate-500">No test attempts recorded yet.</p>`;
       return;
