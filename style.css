@@ -1,0 +1,10 @@
+pre {
+  font-family: 'Courier New', Courier, monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ascii-table {
+  white-space: pre !important;
+  word-break: normal !important;
+}
