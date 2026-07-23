@@ -29,8 +29,7 @@ async function initQuiz() {
     const { data, error } = await db
       .from('questions')
       .select('*')
-      .eq('paper_id', '2026_07_JAN_SHIFT1')
-      .order('id', { ascending: true });
+      .order('id', { ascending: true }); // Fetch all questions across all papers
 
     if (error) {
       console.error("Supabase Error:", error);
@@ -40,6 +39,7 @@ async function initQuiz() {
     if (data && data.length > 0) {
       allQuestions = data.map(q => ({
         id: q.id,
+        paper_id: q.paper_id, // Preserved paper_id for unique paper counting
         unit: q.unit,
         question_text: cleanNewlines(q.question_text),
         layout_text: cleanNewlines(q.layout_text),
@@ -47,6 +47,21 @@ async function initQuiz() {
         correct_option: q.correct_option,
         ai_hint: cleanNewlines(q.ai_hint)
       }));
+
+      // --- DYNAMIC COUNTS CODE ADDED HERE ---
+      const totalQuestionsCount = allQuestions.length;
+
+      // Count unique paper IDs in the database
+      const uniquePapers = new Set(allQuestions.map(q => q.paper_id || '2026_07_JAN_SHIFT1'));
+      const totalPapersCount = uniquePapers.size;
+
+      // Update the landing page badges dynamically
+      const qStatElem = document.getElementById('stat-question-count');
+      const pStatElem = document.getElementById('stat-paper-count');
+
+      if (qStatElem) qStatElem.innerText = totalQuestionsCount;
+      if (pStatElem) pStatElem.innerText = totalPapersCount;
+      // -------------------------------------
     }
   } catch (err) {
     console.error("Data fetch exception:", err);
@@ -55,7 +70,6 @@ async function initQuiz() {
     setTimeout(updateThemeQuestionLimit, 200);
   }
 }
-
 // 2. DASHBOARD & THEME SELECTION HELPERS
 function showLandingPage() {
   if (!isSubmitted && questions.length > 0) {
