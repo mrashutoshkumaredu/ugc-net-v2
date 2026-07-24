@@ -1,8 +1,9 @@
- // REPLACE WITH YOUR SUPABASE CREDENTIALS
+  // REPLACE WITH YOUR SUPABASE CREDENTIALS
     const SUPABASE_URL = 'https://hpcseeboydgfiledqrxl.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwY3NlZWJveWRnZmlsZWRxcnhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ3NjUyNzMsImV4cCI6MjEwMDM0MTI3M30.aYBF7ct6tariXX6i6tBkto8b7Doc5UG2ist3y7m7gDg';
     
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 
 let allQuestions = [];
 let questions = [];
@@ -16,13 +17,14 @@ let isSignUpMode = false;
 let currentUser = null;
 
 let pendingExamConfig = null;
+let currentPaperId = '2026_07_JAN_SHIFT1';
 
 function cleanNewlines(str) {
   if (!str) return '';
   return str.replace(/\\n/g, '\n');
 }
 
-// 1. INITIALISATION
+// 1. INITIALISATION & DYNAMIC PAPER DETECTION
 async function initQuiz() {
   await checkUserSession();
   try {
@@ -49,20 +51,54 @@ async function initQuiz() {
       }));
 
       const totalQuestionsCount = allQuestions.length;
-      const uniquePapers = new Set(allQuestions.map(q => q.paper_id || '2026_07_JAN_SHIFT1'));
-      const totalPapersCount = uniquePapers.size;
+      
+      // Extract unique papers from database dynamically
+      const uniquePaperSet = new Set(allQuestions.map(q => q.paper_id || '2026_07_JAN_SHIFT1'));
+      const paperList = Array.from(uniquePaperSet);
+      const totalPapersCount = paperList.length;
 
       const qStatElem = document.getElementById('stat-question-count');
       const pStatElem = document.getElementById('stat-paper-count');
 
       if (qStatElem) qStatElem.innerText = totalQuestionsCount;
       if (pStatElem) pStatElem.innerText = totalPapersCount;
+
+      // Populate Paper Selector Dropdown on Dashboard
+      populatePaperDropdown(paperList);
     }
   } catch (err) {
     console.error("Data fetch exception:", err);
   } finally {
     setTimeout(updateThemeQuestionLimit, 200);
   }
+}
+
+function populatePaperDropdown(paperList) {
+  const paperSelect = document.getElementById('paper-select');
+  if (!paperSelect) return;
+
+  paperSelect.innerHTML = '';
+  paperList.forEach(paperId => {
+    const opt = document.createElement('option');
+    opt.value = paperId;
+    // Format paper ID nicely for UI display
+    opt.innerText = paperId.replace(/_/g, ' ').replace(/-/g, ' ');
+    paperSelect.appendChild(opt);
+  });
+
+  if (paperList.length > 0) {
+    currentPaperId = paperList[0];
+    updateFullTestInfo();
+  }
+}
+
+function updateFullTestInfo() {
+  const paperSelect = document.getElementById('paper-select');
+  if (paperSelect) currentPaperId = paperSelect.value;
+
+  const paperQuestions = allQuestions.filter(q => (q.paper_id || '2026_07_JAN_SHIFT1') === currentPaperId);
+  const countDisp = document.getElementById('full-test-count-display');
+  if (countDisp) countDisp.innerText = `${paperQuestions.length} Questions`;
 }
 
 // 2. DASHBOARD & THEME SELECTION HELPERS
@@ -106,9 +142,14 @@ function prepareTest(mode) {
   }
 
   if (mode === 'FULL') {
+    const paperSelect = document.getElementById('paper-select');
+    if (paperSelect) currentPaperId = paperSelect.value;
+
+    const paperQuestions = allQuestions.filter(q => (q.paper_id || '2026_07_JAN_SHIFT1') === currentPaperId);
+    
     pendingExamConfig = {
-      mode: 'Full Test',
-      questions: [...allQuestions],
+      mode: `Full Test (${currentPaperId})`,
+      questions: paperQuestions.length > 0 ? paperQuestions : [...allQuestions],
       duration: 3600
     };
   } else {
@@ -154,7 +195,7 @@ function launchExam() {
 
   document.getElementById('submit-btn')?.classList.remove('hidden');
   document.getElementById('review-btn')?.classList.remove('hidden');
-  document.getElementById('clear-btn')?.classList.remove('hidden'); // <-- ADD THIS LINE
+  document.getElementById('clear-btn')?.classList.remove('hidden');
  
   document.getElementById('landing-view')?.classList.add('hidden');
   document.getElementById('quiz-view')?.classList.remove('hidden');
@@ -247,14 +288,12 @@ function selectOption(optIdx) {
   loadQuestion(currentIndex);
 }
 
-// CLEAR RESPONSE LOGIC
 function clearResponse() {
   if (isSubmitted) return;
   userAnswers[currentIndex] = null;
   loadQuestion(currentIndex);
 }
 
-// REPORT MODAL LOGIC
 function openReportModal() {
   document.getElementById('report-modal')?.classList.remove('hidden');
 }
@@ -368,7 +407,6 @@ async function executeSubmission(isAuto = false) {
     if (isCorrect) unitStats[q.unit].correct++;
   });
 
-  // UGC NET SCORING: 2 Marks per correct question
   const marksObtained = correctCount * 2;
   const totalPossibleMarks = questions.length * 2;
   const totalQs = questions.length > 0 ? questions.length : 1;
@@ -383,7 +421,7 @@ async function executeSubmission(isAuto = false) {
         user_id: currentUser.id,
         user_email: currentUser.email,
         student_name: studentName,
-        paper_id: '2026_07_JAN_SHIFT1',
+        paper_id: currentPaperId,
         test_mode: pendingExamConfig ? pendingExamConfig.mode : 'Full Test',
         total_questions: questions.length,
         correct_answers: correctCount,
@@ -404,7 +442,6 @@ async function executeSubmission(isAuto = false) {
   const resPerc = document.getElementById('res-percentage');
   const resTime = document.getElementById('res-time');
 
-  // Display both total marks and correct count (e.g., "80 / 100 Marks (40/50 Qs)")
   if (resScore) resScore.innerText = `${marksObtained} / ${totalPossibleMarks} Marks (${correctCount}/${questions.length} Qs)`;
   if (resPerc) resPerc.innerText = `${percentage}%`;
   if (resTime) resTime.innerText = `${Math.floor(timeTaken / 60)} mins ${timeTaken % 60} secs`;
