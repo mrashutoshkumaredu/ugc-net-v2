@@ -81,7 +81,7 @@
     <!-- Mode Selection Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       
-      <!-- Card 1: Full Paper Mock Test -->
+      <!-- Card 1: Full Paper Mock Test (UPDATED WITH PAPER SELECTOR) -->
       <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition">
         <div>
           <div class="w-10 h-10 bg-indigo-100 text-indigo-700 rounded-xl flex items-center justify-center font-bold mb-4">
@@ -90,10 +90,22 @@
           <h3 class="text-lg font-bold text-slate-800 mb-1">Full Shift Mock Test</h3>
           <p class="text-xs text-slate-500 mb-4">Complete 50-question simulation of official shift paper under standard exam timing.</p>
           
-          <div class="space-y-2 text-xs text-slate-600 mb-6 bg-slate-50 p-3 rounded-lg border border-slate-100">
-            <div class="flex justify-between"><span>Paper:</span> <strong class="text-slate-800">07th Jan 2026 (Shift 1)</strong></div>
-            <div class="flex justify-between"><span>Questions:</span> <strong class="text-slate-800">50 Questions</strong></div>
-            <div class="flex justify-between"><span>Timer:</span> <strong class="text-slate-800">60 Minutes</strong></div>
+          <div class="space-y-3 mb-6 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Select Paper / Shift:</label>
+              <select id="paper-select" onchange="updateFullTestInfo()" class="w-full text-xs bg-white border border-slate-200 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-indigo-600 font-semibold text-slate-800">
+                <option value="">Loading Question Papers...</option>
+              </select>
+            </div>
+
+            <div class="flex justify-between text-xs text-slate-600 pt-1 border-t border-slate-200">
+              <span>Questions:</span>
+              <strong id="full-test-count-display" class="text-indigo-600 font-bold">50 Questions</strong>
+            </div>
+            <div class="flex justify-between text-xs text-slate-600">
+              <span>Timer:</span>
+              <strong class="text-slate-800 font-bold">60 Minutes</strong>
+            </div>
           </div>
         </div>
 
@@ -155,23 +167,23 @@
       <div id="quiz-body">
         
         <!-- Question Header Bar -->
-<div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4 gap-2">
-  <div class="flex items-center gap-2">
-    <span id="question-number" class="text-base sm:text-lg font-bold text-indigo-900">Question 1</span>
-    <!-- Report Question Flag Added Here -->
-    <button onclick="openReportModal()" class="text-xs bg-rose-50 text-rose-600 hover:bg-rose-100 px-2 py-1 rounded-lg border border-rose-200 transition font-medium flex items-center gap-1" title="Report Error in Question">
-      🚩 <span class="hidden sm:inline">Report</span>
-    </button>
-  </div>
+        <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4 gap-2">
+          <div class="flex items-center gap-2">
+            <span id="question-number" class="text-base sm:text-lg font-bold text-indigo-900">Question 1</span>
+            <button onclick="openReportModal()" class="text-xs bg-rose-50 text-rose-600 hover:bg-rose-100 px-2 py-1 rounded-lg border border-rose-200 transition font-medium flex items-center gap-1" title="Report Error in Question">
+              🚩 <span class="hidden sm:inline">Report</span>
+            </button>
+          </div>
 
-  <div class="flex items-center gap-3">
-    <span id="question-unit" class="text-[11px] sm:text-xs bg-indigo-50 text-indigo-700 font-medium px-2.5 py-1 rounded-full border border-indigo-100">Unit</span>
-    
-    <div id="timer-box" class="bg-indigo-950 px-3 py-1 rounded-lg border border-indigo-700 text-center min-w-[70px]">
-      <span id="timer-display" class="text-sm font-mono font-bold text-amber-400">60:00</span>
-    </div>
-  </div>
-</div>
+          <div class="flex items-center gap-3">
+            <span id="question-unit" class="text-[11px] sm:text-xs bg-indigo-50 text-indigo-700 font-medium px-2.5 py-1 rounded-full border border-indigo-100">Unit</span>
+            
+            <div id="timer-box" class="bg-indigo-950 px-3 py-1 rounded-lg border border-indigo-700 text-center min-w-[70px]">
+              <span id="timer-display" class="text-sm font-mono font-bold text-amber-400">60:00</span>
+            </div>
+          </div>
+        </div>
+
         <div id="layout-container" class="hidden mb-4 bg-slate-50 p-3 sm:p-4 rounded-lg border border-slate-200 max-h-64 overflow-auto">
           <pre id="layout-text" class="text-xs sm:text-sm text-slate-700 font-mono leading-relaxed inline-block w-full"></pre>
         </div>
@@ -188,16 +200,16 @@
         </div>
       </div>
 
-      <!-- Navigation Buttons (Clear Response Added Here) -->
-<div class="border-t border-slate-100 pt-4 mt-6 flex justify-between items-center flex-wrap gap-2">
-  <button id="prev-btn" onclick="navigate(-1)" class="px-3.5 py-2 bg-slate-200 text-slate-700 text-xs sm:text-sm font-semibold rounded-lg hover:bg-slate-300 transition">Previous</button>
-  
-  <div class="flex gap-2 flex-wrap">
-    <button id="clear-btn" onclick="clearResponse()" class="px-3 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 text-xs sm:text-sm font-semibold rounded-lg transition">Clear Response</button>
-    <button id="review-btn" onclick="toggleReview()" class="px-3.5 py-2 bg-amber-100 text-amber-800 text-xs sm:text-sm font-semibold rounded-lg hover:bg-amber-200 transition">Mark for Review</button>
-    <button id="next-btn" onclick="navigate(1)" class="px-4 py-2 bg-indigo-600 text-white text-xs sm:text-sm font-semibold rounded-lg hover:bg-indigo-700 transition shadow-sm">Save & Next</button>
-  </div>
-</div>
+      <!-- Navigation Buttons -->
+      <div class="border-t border-slate-100 pt-4 mt-6 flex justify-between items-center flex-wrap gap-2">
+        <button id="prev-btn" onclick="navigate(-1)" class="px-3.5 py-2 bg-slate-200 text-slate-700 text-xs sm:text-sm font-semibold rounded-lg hover:bg-slate-300 transition">Previous</button>
+        
+        <div class="flex gap-2 flex-wrap">
+          <button id="clear-btn" onclick="clearResponse()" class="px-3 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 text-xs sm:text-sm font-semibold rounded-lg transition">Clear Response</button>
+          <button id="review-btn" onclick="toggleReview()" class="px-3.5 py-2 bg-amber-100 text-amber-800 text-xs sm:text-sm font-semibold rounded-lg hover:bg-amber-200 transition">Mark for Review</button>
+          <button id="next-btn" onclick="navigate(1)" class="px-4 py-2 bg-indigo-600 text-white text-xs sm:text-sm font-semibold rounded-lg hover:bg-indigo-700 transition shadow-sm">Save & Next</button>
+        </div>
+      </div>
     </section>
 
     <!-- RIGHT: QUESTION PALETTE -->
@@ -287,7 +299,6 @@
       <p class="text-xs text-slate-500 mb-4">Please log in or create an account to start your timed test.</p>
 
       <div class="space-y-3">
-        <!-- Full Name Field (Shown only on Sign Up) -->
         <div id="name-field-group" class="hidden">
           <label class="text-xs font-semibold text-slate-600">Full Name</label>
           <input id="auth-name" type="text" placeholder="e.g. Ananya Sharma" class="w-full p-2.5 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-indigo-600 outline-none mt-1">
@@ -314,35 +325,37 @@
       </div>
     </div>
   </div>
-<!-- REPORT QUESTION MODAL -->
-<div id="report-modal" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50">
-  <div class="bg-white rounded-2xl p-5 sm:p-6 max-w-md w-full shadow-2xl relative">
-    <button onclick="closeReportModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold">✕</button>
-    <h3 class="text-lg font-bold text-rose-900 mb-1 flex items-center gap-2">🚩 Report Question Discrepancy</h3>
-    <p class="text-xs text-slate-500 mb-4">Spotted a typo or wrong answer key? Let us know and we'll fix it.</p>
 
-    <div class="space-y-3">
-      <div>
-        <label class="text-xs font-semibold text-slate-600">Issue Type</label>
-        <select id="report-type" class="w-full p-2.5 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none mt-1 bg-slate-50">
-          <option value="Wrong Answer Key">Wrong Answer Key</option>
-          <option value="Typo / Formatting Error">Typo / Formatting Error</option>
-          <option value="Incomplete Question Text">Incomplete Question Text</option>
-          <option value="Other">Other</option>
-        </select>
+  <!-- REPORT QUESTION MODAL -->
+  <div id="report-modal" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl p-5 sm:p-6 max-w-md w-full shadow-2xl relative">
+      <button onclick="closeReportModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold">✕</button>
+      <h3 class="text-lg font-bold text-rose-900 mb-1 flex items-center gap-2">🚩 Report Question Discrepancy</h3>
+      <p class="text-xs text-slate-500 mb-4">Spotted a typo or wrong answer key? Let us know and we'll fix it.</p>
+
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-semibold text-slate-600">Issue Type</label>
+          <select id="report-type" class="w-full p-2.5 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none mt-1 bg-slate-50">
+            <option value="Wrong Answer Key">Wrong Answer Key</option>
+            <option value="Typo / Formatting Error">Typo / Formatting Error</option>
+            <option value="Incomplete Question Text">Incomplete Question Text</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold text-slate-600">Additional Details (Optional)</label>
+          <textarea id="report-comment" rows="3" placeholder="Briefly explain what seems incorrect..." class="w-full p-2.5 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none mt-1"></textarea>
+        </div>
+
+        <button onclick="submitReport()" class="w-full py-2.5 bg-rose-600 text-white font-bold rounded-lg hover:bg-rose-700 transition text-xs sm:text-sm shadow-md">
+          Submit Feedback
+        </button>
       </div>
-
-      <div>
-        <label class="text-xs font-semibold text-slate-600">Additional Details (Optional)</label>
-        <textarea id="report-comment" rows="3" placeholder="Briefly explain what seems incorrect..." class="w-full p-2.5 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none mt-1"></textarea>
-      </div>
-
-      <button onclick="submitReport()" class="w-full py-2.5 bg-rose-600 text-white font-bold rounded-lg hover:bg-rose-700 transition text-xs sm:text-sm shadow-md">
-        Submit Feedback
-      </button>
     </div>
   </div>
-</div>
+
   <!-- HISTORY MODAL -->
   <div id="history-modal" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl p-5 sm:p-6 max-w-2xl w-full shadow-2xl relative max-h-[80vh] flex flex-col">
