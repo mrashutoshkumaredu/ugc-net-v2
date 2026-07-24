@@ -217,13 +217,13 @@ function loadQuestion(index) {
 
   if (qNum) qNum.innerText = `Question ${index + 1} of ${questions.length}`;
   if (qUnit) qUnit.innerText = q.unit || "General";
-  if (qText) qText.innerText = q.question_text;
+  if (qText) qText.innerHTML = q.question_text;
 
   const layoutContainer = document.getElementById('layout-container');
   const layoutText = document.getElementById('layout-text');
   if (layoutContainer && layoutText) {
     if (q.layout_text && q.layout_text.trim() !== "") {
-      layoutText.innerText = q.layout_text;
+      layoutText.innerHTML = q.layout_text;
       if (q.layout_text.includes('┌') || q.layout_text.includes('├')) {
         layoutText.classList.add('ascii-table');
       } else {
@@ -279,8 +279,19 @@ function loadQuestion(index) {
   const prevBtn = document.getElementById('prev-btn');
   if (prevBtn) prevBtn.disabled = index === 0;
   
-  renderPalette();
-}
+renderPalette();
+
+  // ADD THIS BLOCK TO RENDER MATH EQUATIONS
+  if (window.renderMathInElement) {
+    renderMathInElement(document.getElementById('quiz-body'), {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '$', right: '$', display: false}
+      ],
+      throwOnError: false
+    });
+  }
+} // <-- This is the closing bracket of the loadQuestion function
 
 function selectOption(optIdx) {
   if (isSubmitted) return;
